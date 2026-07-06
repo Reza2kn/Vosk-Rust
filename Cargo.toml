@@ -1,0 +1,18 @@
+[package]
+name = "shenava-kaldi"
+version = "0.0.1"
+edition = "2021"
+description = "Pure-Rust Kaldi/Vosk Viterbi WFST decoder (best-path words for on-device ASR guiding)."
+license = "Apache-2.0"
+
+[dependencies]
+rustfst = "0.13"
+matrixmultiply = "0.3"  # pure-Rust SIMD SGEMM for the nnet3 forward
+rustfft = "6"           # pure-Rust FFT for the Kaldi MFCC front end
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "probe-fst"
+path = "src/probe.rs"
