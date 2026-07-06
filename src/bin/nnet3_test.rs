@@ -1,6 +1,6 @@
 //! Verify the Rust nnet3 forward against the numpy oracle: read /tmp/vosk_feats.bin, run forward,
 //! compare loglikes to /tmp/vosk_loglikes.bin (max abs diff must be ~0).
-use shenava_kaldi::nnet3::{Mat, Nnet3};
+use vosk_rust::nnet3::{Mat, Nnet3};
 use std::io::Read;
 use std::time::Instant;
 

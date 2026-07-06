@@ -1,8 +1,10 @@
 [package]
-name = "shenava-kaldi"
+name = "vosk-rust"
 version = "0.0.1"
 edition = "2021"
-description = "Pure-Rust Kaldi/Vosk Viterbi WFST decoder (best-path words for on-device ASR guiding)."
+description = "Pure-Rust reimplementation of Vosk/Kaldi nnet3 chain ASR (MFCC + acoustic forward + WFST decode); no libvosk/Kaldi/Python."
+repository = "https://github.com/Reza2kn/Vosk-Rust"
+keywords = ["asr", "speech", "vosk", "kaldi", "nnet3"]
 license = "Apache-2.0"
 
 [dependencies]

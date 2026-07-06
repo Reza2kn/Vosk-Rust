@@ -1,9 +1,9 @@
 //! 100% pure-Rust vosk: 16k waveform → Rust MFCC → Rust nnet3 → Rust WFST decode → words,
 //! vs the vosk oracle. Reads /tmp/vosk_wav16k.bin (16k mono samples, normalized).
 use rustfst::prelude::*;
-use shenava_kaldi::mfcc::Mfcc;
-use shenava_kaldi::nnet3::{Mat, Nnet3};
-use shenava_kaldi::{transition_model::TransitionModel, Decoder};
+use vosk_rust::mfcc::Mfcc;
+use vosk_rust::nnet3::{Mat, Nnet3};
+use vosk_rust::{transition_model::TransitionModel, Decoder};
 use std::collections::HashMap;
 use std::io::Read;
 use std::time::Instant;

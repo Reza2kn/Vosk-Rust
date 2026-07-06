@@ -1,10 +1,10 @@
-# shenava-kaldi
+# Vosk-Rust
 
 **A pure-Rust reimplementation of Vosk / Kaldi nnet3 chain ASR decoding.** No `libvosk`, no
 Kaldi, no C++, no Python — a standard Vosk model directory goes in, words come out.
 
 ```rust
-use shenava_kaldi::Recognizer;
+use vosk_rust::Recognizer;
 
 let rec = Recognizer::load("vosk-model-fa-0.42")?;   // standard Vosk model dir
 let words = rec.recognize(&samples_16k);              // mono f32, ~[-1, 1]

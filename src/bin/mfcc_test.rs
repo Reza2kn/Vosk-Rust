@@ -1,7 +1,7 @@
 //! Verify the Rust Kaldi MFCC vs the torchaudio oracle: read /tmp/vosk_wav16k.bin, ×32768,
 //! compute MFCC, compare to /tmp/vosk_feats.bin.
-use shenava_kaldi::mfcc::Mfcc;
-use shenava_kaldi::nnet3::Mat;
+use vosk_rust::mfcc::Mfcc;
+use vosk_rust::nnet3::Mat;
 use std::io::Read;
 
 fn load_bin(path: &str) -> Mat {
