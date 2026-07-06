@@ -40,14 +40,16 @@ xent training branch is skipped. Matmuls use [`matrixmultiply`](https://crates.i
 
 ## Accuracy vs libvosk (honest)
 
-Benchmarked against libvosk (vosk-python, i.e. the C++/Kaldi reference) on 6,669 hard
-Persian clips (obstructed/DHH conditions), fair-normalized WER (punctuation-, digit-, and
-ZWNJ/compound-folded):
+Benchmarked against libvosk (vosk-python, i.e. the C++/Kaldi reference) on hard Persian clips
+(obstructed/DHH conditions), fair-normalized WER (punctuation-, digit-, and ZWNJ/compound-folded):
 
-| system | WER | CER |
-|---|---|---|
-| libvosk (Kaldi, real i-vectors) | **19.3%** | 6.25% |
-| vosk-rust (this crate) | **22.0%** | 7.97% |
+| model | libvosk (C++/Kaldi) | vosk-rust (this crate) | gap |
+|---|---|---|---|
+| small (fa-0.5) | 19.3% WER / 6.25% CER | 22.0% / 7.97% | +2.7 |
+| big (fa-0.42) | 9.3% WER / 2.72% CER | 11.9% / 3.54% | +2.6 |
+
+The gap is **consistent (~+2.6–2.7 WER) across both models**, which is exactly what you'd expect if it's
+one cause: i-vectors.
 
 **The +2.7 WER gap is one thing: i-vectors.** libvosk feeds the acoustic model an online
 i-vector (speaker/channel adaptation); vosk-rust currently feeds **zeros**. Proof it's the whole
