@@ -44,6 +44,21 @@ impl TransitionModel {
         Ok(TransitionModel { tid2pdf, num_pdfs: num_pdfs as usize, num_transition_states: n })
     }
 
+    /// Read `tid2pdf` from a `model.int4` file (header: "VRQ4" group ivd num_pdfs n tid2pdf…).
+    pub fn load_int4(path: &str) -> Result<TransitionModel> {
+        let buf = std::fs::read(path)?;
+        let mut p = 4 + 4 + 4; // magic + group + ivector_dim
+        let num_pdfs = u32::from_le_bytes(buf[p..p + 4].try_into().unwrap()) as usize;
+        p += 4;
+        let n = u32::from_le_bytes(buf[p..p + 4].try_into().unwrap()) as usize;
+        p += 4;
+        let tid2pdf = buf[p..p + n * 4]
+            .chunks_exact(4)
+            .map(|c| i32::from_le_bytes(c.try_into().unwrap()))
+            .collect();
+        Ok(TransitionModel { tid2pdf, num_pdfs, num_transition_states: n / 2 })
+    }
+
     /// Max valid transition-id (== number of transition-ids).
     pub fn num_tids(&self) -> usize {
         self.tid2pdf.len() - 1

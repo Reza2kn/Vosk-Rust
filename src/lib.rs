@@ -45,8 +45,13 @@ impl Recognizer {
     /// Load a Vosk model directory (static-HCLG "big" models).
     pub fn load(model_dir: &str) -> std::io::Result<Recognizer> {
         let mdl = format!("{model_dir}/am/final.mdl");
-        let net = nnet3::Nnet3::load(&mdl);
-        let tm = transition_model::TransitionModel::load(&mdl)?;
+        let int4 = format!("{model_dir}/am/final.int4");
+        // prefer the compact int4 AM package (weights + tid2pdf) if present; else raw final.mdl
+        let (net, tm) = if std::path::Path::new(&int4).exists() {
+            (nnet3::Nnet3::load_int4(&int4), transition_model::TransitionModel::load_int4(&int4)?)
+        } else {
+            (nnet3::Nnet3::load(&mdl), transition_model::TransitionModel::load(&mdl)?)
+        };
         // graph + words load transparently from a .gz if present (the composed HCLG is large)
         let fst_bytes = read_maybe_gz(&format!("{model_dir}/graph/HCLG.fst"))?;
         let fst = ConstFst::<TropicalWeight>::load(&fst_bytes)

@@ -57,8 +57,25 @@ HCLG load     485 ms      (one-time, 10.7 M states / 698 MB)
   static `const` HCLG; the runtime then loads it in pure Rust exactly like the big model. Decodes the
   reference clip identically to vosk (small AM = 20-dim MFCC, ivector-30, different topology — all
   handled by the same generic code). On the reference clip: `recognize` 115 ms (6× faster than big).
-- 🚧 int4 weight quantization + GPU (candle/wgpu) acoustic backend — planned.
+- ✅ **int4 weight quantization** — `bin/quantize <model_dir>` writes `am/final.int4` (weight
+  matrices → int4 + per-group scales, tid2pdf embedded); `Recognizer::load` auto-detects it. Big AM
+  **97 → 15.5 MB** (6.2×, decode bit-identical); small AM **19 → 3.8 MB** (5.2×, keywords preserved).
+- ✅ **Fast matmul** — on macOS the nnet3 matmuls run through **Apple Accelerate (`cblas_sgemm`, the
+  AMX coprocessor)** — GPU-class ~1000 GFLOP/s, forward 322 → 103 ms, no GPU dependency; other targets
+  use threaded `matrixmultiply` (`MATMUL_NUM_THREADS=4`).
+- ❌ **GPU (candle/Metal)** — investigated and **deliberately skipped**: the WFST decode is CPU-only and
+  dominates the per-utterance pipeline (Amdahl), a one-shot guide pays Metal warmup every session, and
+  Accelerate/AMX already matches realistic GPU latency with zero deps. GPU would only pay off for
+  *batch/offline* transcription — not the live guide.
 - ℹ️ i-vectors are fed as zeros; sufficient for clean-audio guide quality.
+
+## Footprint (small model, on-device)
+
+| artifact | raw | shipped |
+|---|---|---|
+| `graph/HCLG.fst` (composed) | 371 MB | **146 MB** (`.gz`, loaded transparently) |
+| `graph/words.txt` | 8.6 MB | 2.2 MB (`.gz`) |
+| `am/final.int4` (int4 AM) | 19 MB (f32) | **3.8 MB** |
 
 The small model's front end differs (20 mel/ceps, ivector-30, `lda` splice vs `idct`/delta) — all
 read from the model's own `conf/` so one `Recognizer::load` handles both. The offline compose grows

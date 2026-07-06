@@ -9,7 +9,9 @@ license = "Apache-2.0"
 
 [dependencies]
 rustfst = "0.13"
-matrixmultiply = "0.3"  # pure-Rust SIMD SGEMM for the nnet3 forward
+# macOS uses Apple Accelerate (AMX) for the matmuls; other targets (Android/Linux) fall back to
+# threaded matrixmultiply — set MATMUL_NUM_THREADS=4 (P-cores) there.
+matrixmultiply = { version = "0.3", features = ["threading"] }
 rustfft = "6"           # pure-Rust FFT for the Kaldi MFCC front end
 flate2 = "1"            # transparent gzip loading of the (large) HCLG graph
 
