@@ -15,6 +15,20 @@ pub mod transition_model;
 use rustfst::prelude::*;
 use std::collections::HashMap;
 
+/// Read `path`, transparently gunzipping `path.gz` if that exists instead (WFSTs are large).
+fn read_maybe_gz(path: &str) -> std::io::Result<Vec<u8>> {
+    let gz = format!("{path}.gz");
+    if std::path::Path::new(&gz).exists() {
+        let f = std::io::BufReader::new(std::fs::File::open(&gz)?);
+        let mut dec = flate2::read::GzDecoder::new(f);
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut dec, &mut buf)?;
+        Ok(buf)
+    } else {
+        std::fs::read(path)
+    }
+}
+
 /// High-level pure-Rust Vosk recognizer: 16 kHz audio → words. Loads a standard Vosk model
 /// directory (`am/final.mdl`, `graph/HCLG.fst`, `graph/words.txt`) and runs MFCC → nnet3 chain
 /// forward → WFST best-path decode entirely in Rust (no libvosk / Kaldi / numpy).
@@ -33,9 +47,12 @@ impl Recognizer {
         let mdl = format!("{model_dir}/am/final.mdl");
         let net = nnet3::Nnet3::load(&mdl);
         let tm = transition_model::TransitionModel::load(&mdl)?;
-        let fst = ConstFst::<TropicalWeight>::read(format!("{model_dir}/graph/HCLG.fst"))
+        // graph + words load transparently from a .gz if present (the composed HCLG is large)
+        let fst_bytes = read_maybe_gz(&format!("{model_dir}/graph/HCLG.fst"))?;
+        let fst = ConstFst::<TropicalWeight>::load(&fst_bytes)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
-        let wtxt = std::fs::read_to_string(format!("{model_dir}/graph/words.txt"))?;
+        let wtxt = String::from_utf8(read_maybe_gz(&format!("{model_dir}/graph/words.txt"))?)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
         let mut words: Vec<String> = Vec::new();
         for line in wtxt.lines() {
             let mut it = line.split_whitespace();

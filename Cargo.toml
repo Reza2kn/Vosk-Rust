@@ -11,6 +11,7 @@ license = "Apache-2.0"
 rustfst = "0.13"
 matrixmultiply = "0.3"  # pure-Rust SIMD SGEMM for the nnet3 forward
 rustfft = "6"           # pure-Rust FFT for the Kaldi MFCC front end
+flate2 = "1"            # transparent gzip loading of the (large) HCLG graph
 
 [profile.release]
 opt-level = 3

@@ -32,9 +32,11 @@ echo "3/4  relabel disambiguation transition-ids (#0…#N) to epsilon on the INP
 awk '{print $1" 0"}' "$G/disambig_tid.int" > tid_relabel.txt
 fstrelabel --relabel_ipairs=tid_relabel.txt HCLG_conn.fst HCLG_rmdis.fst
 
-echo "4/4  convert to const/standard (the graph rustfst loads)"
-fstconvert --fst_type=const HCLG_rmdis.fst "$G/HCLG.fst"
-cp words.txt "$G/words.txt"
+echo "4/4  convert to const/standard + gzip (Vosk-Rust loads .gz transparently)"
+fstconvert --fst_type=const HCLG_rmdis.fst HCLG.fst
+fstinfo HCLG.fst | grep -iE "fst type|arc type|# of states|# of arcs" || true
+gzip -9 -c HCLG.fst > "$G/HCLG.fst.gz"
+gzip -9 -c words.txt > "$G/words.txt.gz"
 
-echo "done → $G/HCLG.fst  +  $G/words.txt"
-fstinfo "$G/HCLG.fst" | grep -iE "fst type|arc type|# of states|# of arcs" || true
+echo "done → $G/HCLG.fst.gz ($(du -h "$G/HCLG.fst.gz" | cut -f1))  +  $G/words.txt.gz"
+echo "(you can now delete the shipped graph/HCLr.fst + graph/Gr.fst — no longer needed at runtime)"
