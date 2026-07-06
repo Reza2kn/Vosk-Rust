@@ -47,13 +47,26 @@ impl Recognizer {
                 words[id] = w.to_string();
             }
         }
+        // decode config from conf/model.conf (big: beam 13 / max-active 7000; small: 10 / 3000)
+        let conf = std::fs::read_to_string(format!("{model_dir}/conf/model.conf")).unwrap_or_default();
+        let getf = |key: &str, def: f32| -> f32 {
+            for line in conf.lines() {
+                if let Some(v) = line.trim().strip_prefix(&format!("--{key}=")) {
+                    return v.trim().parse().unwrap_or(def);
+                }
+            }
+            def
+        };
+        let beam = getf("beam", 13.0);
+        let ascale = getf("acoustic-scale", 1.0);
+        let max_active = getf("max-active", 7000.0) as usize;
         Ok(Recognizer {
             net,
             tm,
             fst,
             words,
-            mfcc: mfcc::Mfcc::vosk(16000.0),
-            decoder: Decoder::new(13.0, 1.0).with_max_active(7000),
+            mfcc: mfcc::Mfcc::from_conf(model_dir, 16000.0),
+            decoder: Decoder::new(beam, ascale).with_max_active(max_active),
         })
     }
 
@@ -61,7 +74,7 @@ impl Recognizer {
     pub fn recognize(&self, samples: &[f32]) -> String {
         let scaled: Vec<f32> = samples.iter().map(|x| x * 32768.0).collect();
         let feats = self.mfcc.compute(&scaled);
-        let ivector = nnet3::Mat::new(feats.r, 40);
+        let ivector = nnet3::Mat::new(feats.r, self.net.ivector_dim);
         let ll = self.net.forward(feats, ivector);
         let loglikes: Vec<Vec<f32>> =
             (0..ll.r).map(|i| ll.d[i * ll.c..(i + 1) * ll.c].to_vec()).collect();

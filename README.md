@@ -52,9 +52,18 @@ HCLG load     485 ms      (one-time, 10.7 M states / 698 MB)
 ## Status
 
 - ✅ **Big model** (static `HCLG.fst`) — fully working, verified.
-- 🚧 Small models (`HCLr ∘ Gr` lookahead composition) — planned.
+- ✅ **Small model** (`HCLr ∘ Gr` lookahead graphs) — working. The one-time offline graph prep
+  (`scripts/prep_small_graph.sh`, needs `brew install openfst`) composes the lookahead graphs into a
+  static `const` HCLG; the runtime then loads it in pure Rust exactly like the big model. Decodes the
+  reference clip identically to vosk (small AM = 20-dim MFCC, ivector-30, different topology — all
+  handled by the same generic code). On the reference clip: `recognize` 115 ms (6× faster than big).
 - 🚧 int4 weight quantization + GPU (candle/wgpu) acoustic backend — planned.
 - ℹ️ i-vectors are fed as zeros; sufficient for clean-audio guide quality.
+
+The small model's front end differs (20 mel/ceps, ivector-30, `lda` splice vs `idct`/delta) — all
+read from the model's own `conf/` so one `Recognizer::load` handles both. The offline compose grows
+the graph on disk (~110 MB lookahead → ~350 MB static `const`); that's the tradeoff for a pure-Rust
+runtime with no `libvosk` lookahead machinery.
 
 ## Layout
 

@@ -25,10 +25,28 @@ pub struct Mfcc {
 }
 
 impl Mfcc {
-    /// Vosk fa-0.42 config.
+    /// Big Vosk fa-0.42 config (40 mel / 40 ceps).
     pub fn vosk(sr: f32) -> Mfcc {
-        let (num_mel, num_ceps) = (40usize, 40usize);
-        let (low, high, preemph, lifter) = (20.0f32, 7600.0f32, 0.97f32, 22.0f32);
+        Mfcc::new(sr, 40, 40, 20.0, 7600.0, 0.97, 22.0)
+    }
+
+    /// Parse `conf/mfcc.conf` for `num-mel-bins`/`num-ceps`/`low-freq`/`high-freq` (Vosk models
+    /// vary: big = 40/40, small = 20/20).
+    pub fn from_conf(model_dir: &str, sr: f32) -> Mfcc {
+        let txt = std::fs::read_to_string(format!("{model_dir}/conf/mfcc.conf")).unwrap_or_default();
+        let get = |key: &str, def: f32| -> f32 {
+            for line in txt.lines() {
+                if let Some(v) = line.trim().strip_prefix(&format!("--{key}=")) {
+                    return v.trim().parse().unwrap_or(def);
+                }
+            }
+            def
+        };
+        Mfcc::new(sr, get("num-mel-bins", 40.0) as usize, get("num-ceps", 40.0) as usize,
+                  get("low-freq", 20.0), get("high-freq", 7600.0), 0.97, 22.0)
+    }
+
+    pub fn new(sr: f32, num_mel: usize, num_ceps: usize, low: f32, high: f32, preemph: f32, lifter: f32) -> Mfcc {
         let frame_len = (0.025 * sr).round() as usize; // 400
         let frame_shift = (0.010 * sr).round() as usize; // 160
         let mut fft_size = 1;

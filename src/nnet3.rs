@@ -79,6 +79,8 @@ enum Node {
 pub struct Nnet3 {
     comps: HashMap<String, Comp>,
     nodes: HashMap<String, Node>,
+    /// dim of the `ivector` input node (40 big / 30 small); 0 if none.
+    pub ivector_dim: usize,
 }
 
 // ---- binary component parsing helpers ----
@@ -110,7 +112,8 @@ fn named_f32(buf: &[u8], s: usize, e: usize, tok: &[u8]) -> Option<f32> {
 impl Nnet3 {
     pub fn load(path: &str) -> Nnet3 {
         let buf = std::fs::read(path).unwrap();
-        Nnet3 { comps: parse_components(&buf), nodes: parse_graph(&buf) }
+        let ivector_dim = ivector_dim_of(&buf);
+        Nnet3 { comps: parse_components(&buf), nodes: parse_graph(&buf), ivector_dim }
     }
 
     /// feats [T,40], ivector [T,40] → chain loglikes [ceil(T/3), 3736].
@@ -295,6 +298,20 @@ fn kv<'a>(line: &'a str, key: &str) -> Option<&'a str> {
     let i = l.find(&pat)? + pat.len();
     let rest = &line[i - 1..];
     Some(rest.split_whitespace().next().unwrap())
+}
+
+fn ivector_dim_of(buf: &[u8]) -> usize {
+    let a = find(buf, b"<Nnet3>", 0).unwrap();
+    let b = find(buf, b"<NumComponents>", 0).unwrap();
+    for line in String::from_utf8_lossy(&buf[a..b]).lines() {
+        let line = line.trim();
+        if line.starts_with("input-node") && line.contains("name=ivector") {
+            if let Some(d) = kv(line.strip_prefix("input-node").unwrap(), "dim") {
+                return d.parse().unwrap_or(0);
+            }
+        }
+    }
+    0
 }
 
 fn parse_graph(buf: &[u8]) -> HashMap<String, Node> {
