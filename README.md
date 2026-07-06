@@ -82,9 +82,13 @@ HCLG load     485 ms      (one-time, 10.7 M states / 698 MB)
   static `const` HCLG; the runtime then loads it in pure Rust exactly like the big model. Decodes the
   reference clip identically to vosk (small AM = 20-dim MFCC, ivector-30, different topology — all
   handled by the same generic code). On the reference clip: `recognize` 115 ms (6× faster than big).
-- ✅ **int4 weight quantization** — `bin/quantize <model_dir>` writes `am/final.int4` (weight
-  matrices → int4 + per-group scales, tid2pdf embedded); `Recognizer::load` auto-detects it. Big AM
-  **97 → 15.5 MB** (6.2×, decode bit-identical); small AM **19 → 3.8 MB** (5.2×, keywords preserved).
+- ⚠️ **int4 weight quantization — implemented but not recommended.** `bin/quantize <model_dir>` writes
+  `am/final.int4` (weight matrices → int4 + per-group scales, tid2pdf embedded) and `Recognizer::load`
+  auto-detects it (6.2× smaller AM). It is **bit-identical on easy/clean clips but degrades badly at
+  scale** — on 400 hard clips, int4 roughly **doubles WER** (big 11.9→22.4, small also +7.7). These
+  Kaldi chain models are weight-precision-sensitive (unlike a FastConformer, which tolerates int4), and
+  the AM isn't the footprint bottleneck anyway (the graph dominates). **Ship f32** (leave `final.mdl`;
+  don't place `final.int4`). The quantizer is kept only for size-over-accuracy experiments.
 - ✅ **Fast matmul** — on macOS the nnet3 matmuls run through **Apple Accelerate (`cblas_sgemm`, the
   AMX coprocessor)** — GPU-class ~1000 GFLOP/s, forward 322 → 103 ms, no GPU dependency; other targets
   use threaded `matrixmultiply` (`MATMUL_NUM_THREADS=4`).
